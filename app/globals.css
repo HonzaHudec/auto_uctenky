@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* AutoÚčtenky — dark automotive theme */
+    --background: 222 47% 6%;
+    --foreground: 215 25% 92%;
+    --card: 220 40% 9%;
+    --card-foreground: 215 25% 92%;
+    --popover: 220 40% 9%;
+    --popover-foreground: 215 25% 92%;
+    --primary: 217 91% 58%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 220 30% 14%;
+    --secondary-foreground: 215 20% 80%;
+    --muted: 220 30% 12%;
+    --muted-foreground: 215 15% 48%;
+    --accent: 36 100% 52%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 28% 17%;
+    --input: 220 30% 13%;
+    --ring: 217 91% 58%;
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --surface: 220 38% 11%;
+    --surface-hover: 220 35% 14%;
+    --fuel: 36 100% 52%;
+    --fuel-muted: 36 70% 20%;
+    --success: 142 71% 45%;
+    --success-muted: 142 50% 12%;
+    --warning: 38 92% 55%;
+    --warning-muted: 38 60% 14%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans', 'DM Sans', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Exo 2', 'IBM Plex Sans', system-ui, sans-serif;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Blue glow effect */
+.glow-blue {
+  box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.3);
+}
+.glow-fuel {
+  box-shadow: 0 0 20px -5px hsl(var(--fuel) / 0.4);
+}
+
+/* Card gradient */
+.card-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--card)) 0%,
+    hsl(220 40% 11%) 100%
+  );
+}
+
+/* Stat card glow */
+.stat-card-fuel {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--fuel-muted)) 0%,
+    hsl(var(--card)) 100%
+  );
+  border-color: hsl(var(--fuel) / 0.3);
+}
+.stat-card-primary {
+  background: linear-gradient(
+    135deg,
+    hsl(217 60% 14%) 0%,
+    hsl(var(--card)) 100%
+  );
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+/* Bottom nav safe area */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Hide Next.js badge */
+body nextjs-portal {
+  display: none;
+}
+
+/* Number input arrows hidden */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Form input base style */
+.form-input {
+  @apply w-full rounded-xl border border-border bg-input text-foreground px-3.5 py-2.5 text-sm outline-none transition-colors;
+  @apply focus:ring-2 focus:ring-ring/40 focus:border-primary/60;
+  @apply placeholder:text-muted-foreground;
+}
+
+input[type='date'].form-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+}
+
+/* Fuel progress bar */
+@keyframes fillBar {
+  from { width: 0% }
+}
+.animate-fill {
+  animation: fillBar 0.8s ease-out forwards;
+}
+
+/* Recharts chart background in dark mode */
+.dark .recharts-surface {
+  background-color: #e3dfdf;
+}
