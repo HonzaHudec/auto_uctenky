@@ -17,6 +17,23 @@ Aplikace pro evidenci nakladu na auto (Next.js + Convex), puvodne vytvorena v Ma
    - Notifikace: `EMAIL_NOTIFICATION_ENDPOINT`, `RECIPIENT_EMAIL`
 5. Po ulozeni env promennych udelej ve Vercelu `Redeploy`.
 
+## OCR uctenky (tankovani)
+
+- OCR endpoint je `POST /api/ocr`.
+- Ocekavany request body: `imageBase64`, `mimeType`.
+- Endpoint vraci pole:
+  - `date` (`YYYY-MM-DD` nebo `null`)
+  - `liters` (`number` nebo `null`)
+  - `pricePerLiter` (`number` nebo `null`)
+  - `totalAmountCzk` (`number` nebo `null`)
+  - `confidence` (`high` | `medium` | `low`)
+- Ve formulari pro tankovani se po OCR automaticky predvyplni:
+  - datum (`date`)
+  - mnozstvi (`liters`)
+  - cena za litr/kWh (`pricePerLiter`)
+- Pokud LLM nevrati validni JSON, backend pouzije fallback parsovani z raw textu.
+- Pokud se OCR nepodari, aplikace umozni rucni dopsani hodnot.
+
 ## Jak to zprocesovat do GitHubu
 
 Pokud tento adresar jeste neni git repo:
