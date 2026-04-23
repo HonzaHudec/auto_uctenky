@@ -310,7 +310,13 @@ export function NewExpenseContent({ vehicleId }: Props) {
               <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}
               >
-                <Icon className={`w-5 h-5 ${iconCls}`} />
+                {value === "service" ? (
+                  <span className="inline-flex items-center justify-center p-0.5 rounded-[6px] border border-warning/40">
+                    <Icon className={`w-4 h-4 ${iconCls}`} />
+                  </span>
+                ) : (
+                  <Icon className={`w-5 h-5 ${iconCls}`} />
+                )}
               </div>
               <div>
                 <p className={`font-semibold text-sm ${labelCls}`}>{label}</p>
@@ -588,9 +594,13 @@ export function NewExpenseContent({ vehicleId }: Props) {
 
       <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-            <currentTypeInfo.icon
-              className="w-5 h-5 text-muted-foreground"
-            />
+            {expenseType === "service" ? (
+              <span className="inline-flex items-center justify-center p-0.5 rounded-[6px] border border-warning/40">
+                <currentTypeInfo.icon className="w-4 h-4 text-warning" />
+              </span>
+            ) : (
+              <currentTypeInfo.icon className="w-5 h-5 text-muted-foreground" />
+            )}
         </div>
         <h1
           className="text-2xl font-bold"

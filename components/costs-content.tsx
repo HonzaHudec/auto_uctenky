@@ -383,11 +383,21 @@ export function CostsContent({ vehicleId }: Props) {
                             (TYPE_COLORS[e.type] ?? TYPE_COLORS.expense).bg
                           } rounded-lg`}
                         >
-                          <Icon
-                            className={`w-3.5 h-3.5 ${
-                              (TYPE_COLORS[e.type] ?? TYPE_COLORS.expense).icon
-                            }`}
-                          />
+                          {e.type === "service" ? (
+                            <span className="inline-flex items-center justify-center p-0.5 rounded-[5px] border border-warning/40">
+                              <Icon
+                                className={`w-3 h-3 ${
+                                  (TYPE_COLORS[e.type] ?? TYPE_COLORS.expense).icon
+                                }`}
+                              />
+                            </span>
+                          ) : (
+                            <Icon
+                              className={`w-3.5 h-3.5 ${
+                                (TYPE_COLORS[e.type] ?? TYPE_COLORS.expense).icon
+                              }`}
+                            />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium leading-none">

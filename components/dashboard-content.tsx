@@ -217,7 +217,13 @@ function ExpenseRow({
       className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border hover:border-border/80 hover:bg-secondary/40 transition-all"
     >
       <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cfg.bg}`}>
-        <Icon className={`w-4 h-4 ${cfg.color}`} />
+        {expense.type === "service" ? (
+          <span className="inline-flex items-center justify-center p-0.5 rounded-[5px] border border-warning/40">
+            <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
+          </span>
+        ) : (
+          <Icon className={`w-4 h-4 ${cfg.color}`} />
+        )}
       </div>
 
       <div className="flex-1 min-w-0">
