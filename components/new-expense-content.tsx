@@ -137,8 +137,11 @@ export function NewExpenseContent({ vehicleId }: Props) {
       if (hasValidDate) {
         setDate(data.date)
       }
-      if (data.liters) setLiters(String(data.liters).replace(".", ","))
-      if (data.pricePerLiter) setPricePerLiter(String(data.pricePerLiter).replace(".", ","))
+      const totalFromReceipt =
+        typeof data.totalAmountCzk === "number" && Number.isFinite(data.totalAmountCzk) ? data.totalAmountCzk : null
+      if (totalFromReceipt !== null) {
+        toast.info(`Celkem na účtence: ${totalFromReceipt.toLocaleString("cs-CZ")} Kč`)
+      }
       if (!hasValidDate) {
         toast.info("Datum z účtenky nebylo rozpoznáno, zkontrolujte ho ručně")
       }

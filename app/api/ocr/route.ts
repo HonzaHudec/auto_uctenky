@@ -117,28 +117,19 @@ function extractFromRawText(rawText: string): Record<string, unknown> {
   const text = rawText.replace(/\s+/g, " ").trim()
 
   const dateMatch = text.match(/\b(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[./-]\d{1,2}[./-]\d{2,4})\b/)
-  const liters =
-    extractLabeledNumber(text, /(?:mno(?:zstvi)?|mno\.?|litr(?:y)?|objem|qty)[^0-9]{0,20}(\d{1,3}(?:[.,]\d{1,3})?)/i) ??
-    extractLabeledNumber(text, /(\d{1,3}(?:[.,]\d{1,3})?)\s*(?:l|litr(?:y)?)/i)
-  const pricePerLiter = extractLabeledNumber(
-    text,
-    /(?:cena\s*\/?\s*l|k[čc]\s*\/\s*l|jednotkov[aá]\s*cena|jc)[^0-9]{0,20}(\d{1,3}(?:[.,]\d{1,3})?)/i
-  )
   const totalAmountCzk =
     extractLabeledNumber(text, /(?:celkem|total|k\s*uhrad[eě]|[čc]ástka)[^0-9]{0,30}(\d{1,6}(?:[.,]\d{1,2})?)/i) ??
     extractTotalFallback(text)
 
   return {
     date: dateMatch?.[1] ?? null,
-    liters,
-    pricePerLiter,
     totalAmountCzk,
   }
 }
 
-function computeConfidence(liters: number | null, pricePerLiter: number | null): OcrConfidence {
-  if (liters && pricePerLiter) return "high"
-  if (liters || pricePerLiter) return "medium"
+function computeConfidence(date: string | null, totalAmountCzk: number | null): OcrConfidence {
+  if (date && totalAmountCzk) return "high"
+  if (date || totalAmountCzk) return "medium"
   return "low"
 }
 
@@ -186,25 +177,20 @@ export async function POST(req: NextRequest) {
           content: [
             {
               type: "text",
-              text: `Extract data from this fuel/gas station receipt. Respond with ONLY this JSON structure (no markdown, just raw JSON):
+              text: `Extract only date and total amount from this fuel/gas station receipt.
+Respond with ONLY this JSON structure (no markdown, just raw JSON):
 {
   "date": "YYYY-MM-DD or null",
-  "liters": number or null,
-  "pricePerLiter": number or null,
   "totalAmountCzk": number or null,
   "confidence": "high" | "medium" | "low"
 }
 
 Rules:
 - date: the transaction date in YYYY-MM-DD format, or null if not found
-- liters: total liters/quantity dispensed as a number (look for: MNO, množství, Qty, litry, l, objem — typically 20–80 l)
-- pricePerLiter: price per liter in CZK (look for: cena/l, Kč/l, jednotková cena, unit price — typically 35–65 Kč/l)
 - totalAmountCzk: total amount paid in CZK (look for: celkem, total, částka — typically the largest bold number on receipt)
-- If liters and totalAmountCzk found but pricePerLiter missing: calculate pricePerLiter = round(totalAmountCzk / liters, 2)
-- If pricePerLiter and totalAmountCzk found but liters missing: calculate liters = round(totalAmountCzk / pricePerLiter, 2)
-- confidence: "high" if liters + pricePerLiter both present (or calculated), "medium" if only one, "low" if neither
+- confidence: "high" if date and totalAmountCzk found, "medium" if only one found, "low" if neither
 - Use Czech locale: decimal separator may be comma (convert to dot for JSON numbers)
-- Czech receipt labels: Množství/MNO = liters, Cena/litr or JC = price per liter, Celkem/TOTAL = total paid`,
+- Czech receipt labels: Datum = transaction date, Celkem/TOTAL = total paid`,
             },
             {
               type: "image",
@@ -241,24 +227,16 @@ Rules:
     console.log("OCR parsed result:", parsed)
 
     const normalizedDate = normalizeDate(parsed.date)
-    let liters = toNumber(parsed.liters)
-    let pricePerLiter = toNumber(parsed.pricePerLiter)
+    // Conservative mode: do not auto-fill partial fuel values.
+    // Users enter liters/price manually to avoid incorrect OCR prefill.
+    const liters = null
+    const pricePerLiter = null
     const totalAmountCzk = toNumber(parsed.totalAmountCzk)
-
-    // Server-side fallback calculation if LLM didn't already do it
-    if (!liters && pricePerLiter && totalAmountCzk && pricePerLiter > 0) {
-      liters = parseFloat((totalAmountCzk / pricePerLiter).toFixed(2))
-      console.log("Calculated liters from total/ppl:", liters)
-    }
-    if (!pricePerLiter && liters && totalAmountCzk && liters > 0) {
-      pricePerLiter = parseFloat((totalAmountCzk / liters).toFixed(2))
-      console.log("Calculated pricePerLiter from total/liters:", pricePerLiter)
-    }
 
     const confidence: OcrConfidence =
       parsed.confidence === "high" || parsed.confidence === "medium" || parsed.confidence === "low"
         ? parsed.confidence
-        : computeConfidence(liters, pricePerLiter)
+        : computeConfidence(normalizedDate, totalAmountCzk)
 
     return NextResponse.json({
       date: normalizedDate,
