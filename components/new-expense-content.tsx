@@ -133,9 +133,15 @@ export function NewExpenseContent({ vehicleId }: Props) {
       const data = await response.json()
       console.log("OCR result:", data)
 
-      if (data.date) setDate(data.date)
+      const hasValidDate = typeof data.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(data.date)
+      if (hasValidDate) {
+        setDate(data.date)
+      }
       if (data.liters) setLiters(String(data.liters).replace(".", ","))
       if (data.pricePerLiter) setPricePerLiter(String(data.pricePerLiter).replace(".", ","))
+      if (!hasValidDate) {
+        toast.info("Datum z účtenky nebylo rozpoznáno, zkontrolujte ho ručně")
+      }
 
       if (data.confidence === "high") {
         toast.success("Účtenka rozpoznána!")

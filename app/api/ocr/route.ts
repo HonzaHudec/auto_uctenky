@@ -1,5 +1,74 @@
 import { NextRequest, NextResponse } from "next/server"
 
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value !== "string") return null
+
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  // Keep digits, separators, and minus sign only
+  const cleaned = trimmed.replace(/[^\d,.\-]/g, "")
+  if (!cleaned) return null
+
+  const hasComma = cleaned.includes(",")
+  const hasDot = cleaned.includes(".")
+
+  let normalized = cleaned
+  if (hasComma && hasDot) {
+    // 1.234,56 -> 1234.56
+    normalized = cleaned.replace(/\./g, "").replace(",", ".")
+  } else if (hasComma) {
+    normalized = cleaned.replace(",", ".")
+  }
+
+  const parsed = Number.parseFloat(normalized)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n)
+}
+
+function normalizeDate(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const raw = value.trim()
+  if (!raw) return null
+
+  // Already ISO date
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw
+  }
+
+  // Common receipt formats: DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY
+  const match = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/)
+  if (!match) return null
+
+  const day = Number.parseInt(match[1], 10)
+  const month = Number.parseInt(match[2], 10)
+  let year = Number.parseInt(match[3], 10)
+  if (year < 100) year += 2000
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null
+
+  const candidate = new Date(Date.UTC(year, month - 1, day))
+  if (
+    candidate.getUTCFullYear() !== year ||
+    candidate.getUTCMonth() !== month - 1 ||
+    candidate.getUTCDate() !== day
+  ) {
+    return null
+  }
+
+  // Plausibility check for receipts
+  const min = new Date(Date.UTC(2000, 0, 1))
+  const max = new Date()
+  max.setUTCDate(max.getUTCDate() + 1)
+  if (candidate < min || candidate > max) return null
+
+  return `${year}-${pad2(month)}-${pad2(day)}`
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { imageBase64, mimeType } = await req.json()
@@ -110,9 +179,10 @@ Rules:
 
     console.log("OCR parsed result:", parsed)
 
-    let liters = (parsed.liters as number) ?? null
-    let pricePerLiter = (parsed.pricePerLiter as number) ?? null
-    const totalAmountCzk = (parsed.totalAmountCzk as number) ?? null
+    const normalizedDate = normalizeDate(parsed.date)
+    let liters = toNumber(parsed.liters)
+    let pricePerLiter = toNumber(parsed.pricePerLiter)
+    const totalAmountCzk = toNumber(parsed.totalAmountCzk)
 
     // Server-side fallback calculation if LLM didn't already do it
     if (!liters && pricePerLiter && totalAmountCzk && pricePerLiter > 0) {
@@ -125,7 +195,7 @@ Rules:
     }
 
     return NextResponse.json({
-      date: parsed.date ?? null,
+      date: normalizedDate,
       liters,
       pricePerLiter,
       totalAmountCzk,
