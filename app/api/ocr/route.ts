@@ -120,6 +120,40 @@ function extractTotalFallback(text: string): number | null {
   return Math.max(...numbers)
 }
 
+function extractLitersFallback(text: string): number | null {
+  const candidates = [
+    /(?:mno[žz]stv[ií]|objem|litr[yůu]?)[^0-9]{0,20}(\d{1,3}(?:[.,]\d{1,3})?)/i,
+    /\b(\d{1,3}(?:[.,]\d{1,3})?)\s*l\b/i,
+  ]
+
+  for (const pattern of candidates) {
+    const match = text.match(pattern)
+    const parsed = toNumber(match?.[1] ?? null)
+    if (typeof parsed === "number" && parsed > 0 && parsed <= 300) {
+      return parsed
+    }
+  }
+
+  return null
+}
+
+function extractPricePerLiterFallback(text: string): number | null {
+  const candidates = [
+    /(?:cena\s*za\s*l|za\s*litr|jedn\.\s*cena)[^0-9]{0,20}(\d{1,3}(?:[.,]\d{1,3})?)/i,
+    /\b(\d{1,3}(?:[.,]\d{1,3})?)\s*(?:k[čc]\s*\/\s*l|czk\s*\/\s*l|\/\s*l)\b/i,
+  ]
+
+  for (const pattern of candidates) {
+    const match = text.match(pattern)
+    const parsed = toNumber(match?.[1] ?? null)
+    if (typeof parsed === "number" && parsed > 0 && parsed <= 200) {
+      return parsed
+    }
+  }
+
+  return null
+}
+
 function extractFromRawText(rawText: string): Record<string, unknown> {
   const text = rawText.replace(/\s+/g, " ").trim()
 
@@ -127,9 +161,17 @@ function extractFromRawText(rawText: string): Record<string, unknown> {
   const totalAmountCzk =
     extractLabeledNumber(text, /(?:celkem|total|k\s*uhrad[eě]|[čc]ástka)[^0-9]{0,30}(\d{1,6}(?:[.,]\d{1,2})?)/i) ??
     extractTotalFallback(text)
+  const liters =
+    extractLabeledNumber(text, /(?:mno[žz]stv[ií]|objem|litr[yůu]?)[^0-9]{0,30}(\d{1,3}(?:[.,]\d{1,3})?)/i) ??
+    extractLitersFallback(text)
+  const pricePerLiter =
+    extractLabeledNumber(text, /(?:cena\s*za\s*l|za\s*litr|jedn\.\s*cena)[^0-9]{0,30}(\d{1,3}(?:[.,]\d{1,3})?)/i) ??
+    extractPricePerLiterFallback(text)
 
   return {
     date: dateMatch?.[1] ?? null,
+    liters,
+    pricePerLiter,
     totalAmountCzk,
   }
 }
@@ -188,14 +230,18 @@ export async function POST(req: NextRequest) {
 Respond with ONLY this JSON structure (no markdown, just raw JSON):
 {
   "date": "YYYY-MM-DD or null",
+  "liters": number or null,
+  "pricePerLiter": number or null,
   "totalAmountCzk": number or null,
   "confidence": "high" | "medium" | "low"
 }
 
 Rules:
 - date: the transaction date in YYYY-MM-DD format, or null if not found
+- liters: fuel quantity in liters (or kWh for charging), or null if not found
+- pricePerLiter: unit price in CZK/l (or CZK/kWh), or null if not found
 - totalAmountCzk: total amount paid in CZK (look for: celkem, total, částka — typically the largest bold number on receipt)
-- confidence: "high" if date and totalAmountCzk found, "medium" if only one found, "low" if neither
+- confidence: "high" if at least date and totalAmountCzk found, "medium" if only one key field found, "low" if almost nothing found
 - Use Czech locale: decimal separator may be comma (convert to dot for JSON numbers)
 - Czech receipt labels: Datum = transaction date, Celkem/TOTAL = total paid`,
             },
@@ -234,10 +280,8 @@ Rules:
     console.log("OCR parsed result:", parsed)
 
     const normalizedDate = normalizeDate(parsed.date)
-    // Conservative mode: do not auto-fill partial fuel values.
-    // Users enter liters/price manually to avoid incorrect OCR prefill.
-    const liters = null
-    const pricePerLiter = null
+    const liters = toNumber(parsed.liters)
+    const pricePerLiter = toNumber(parsed.pricePerLiter)
     const totalAmountCzk = toNumber(parsed.totalAmountCzk)
 
     const confidence: OcrConfidence =

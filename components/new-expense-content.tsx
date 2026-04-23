@@ -104,6 +104,10 @@ export function NewExpenseContent({ vehicleId }: Props) {
       ? (parseFloat(liters.replace(",", ".")) * parseFloat(pricePerLiter.replace(",", "."))).toFixed(2)
       : ""
 
+  function toInputNumberString(value: number): string {
+    return Number.isInteger(value) ? String(value) : String(value.toFixed(3)).replace(/\.?0+$/, "")
+  }
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -139,6 +143,16 @@ export function NewExpenseContent({ vehicleId }: Props) {
       }
       const totalFromReceipt =
         typeof data.totalAmountCzk === "number" && Number.isFinite(data.totalAmountCzk) ? data.totalAmountCzk : null
+      const litersFromReceipt = typeof data.liters === "number" && Number.isFinite(data.liters) ? data.liters : null
+      const pricePerLiterFromReceipt =
+        typeof data.pricePerLiter === "number" && Number.isFinite(data.pricePerLiter) ? data.pricePerLiter : null
+
+      if (litersFromReceipt !== null) {
+        setLiters(toInputNumberString(litersFromReceipt))
+      }
+      if (pricePerLiterFromReceipt !== null) {
+        setPricePerLiter(toInputNumberString(pricePerLiterFromReceipt))
+      }
       if (totalFromReceipt !== null) {
         toast.info(`Celkem na účtence: ${totalFromReceipt.toLocaleString("cs-CZ")} Kč`)
       }
