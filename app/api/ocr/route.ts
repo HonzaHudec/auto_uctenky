@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
+type OcrConfidence = "high" | "medium" | "low"
+
 function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value
   if (typeof value !== "string") return null
@@ -67,6 +69,77 @@ function normalizeDate(value: unknown): string | null {
   if (candidate < min || candidate > max) return null
 
   return `${year}-${pad2(month)}-${pad2(day)}`
+}
+
+function tryParseJsonObject(rawText: string): Record<string, unknown> | null {
+  const cleaned = rawText
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/gi, "")
+    .trim()
+
+  const candidates: string[] = [cleaned]
+  const firstBrace = cleaned.indexOf("{")
+  const lastBrace = cleaned.lastIndexOf("}")
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    candidates.push(cleaned.slice(firstBrace, lastBrace + 1))
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate)
+      if (parsed && typeof parsed === "object") {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      // Continue to next candidate
+    }
+  }
+
+  return null
+}
+
+function extractLabeledNumber(text: string, labelPattern: RegExp): number | null {
+  const m = text.match(labelPattern)
+  if (!m) return null
+  return toNumber(m[1] ?? null)
+}
+
+function extractTotalFallback(text: string): number | null {
+  const numbers = [...text.matchAll(/\b\d{1,3}(?:[ .]\d{3})*(?:[.,]\d{1,2})?\b/g)]
+    .map((m) => toNumber(m[0]))
+    .filter((n): n is number => typeof n === "number")
+    .filter((n) => n >= 50 && n <= 10000)
+  if (numbers.length === 0) return null
+  return Math.max(...numbers)
+}
+
+function extractFromRawText(rawText: string): Record<string, unknown> {
+  const text = rawText.replace(/\s+/g, " ").trim()
+
+  const dateMatch = text.match(/\b(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[./-]\d{1,2}[./-]\d{2,4})\b/)
+  const liters =
+    extractLabeledNumber(text, /(?:mno(?:zstvi)?|mno\.?|litr(?:y)?|objem|qty)[^0-9]{0,20}(\d{1,3}(?:[.,]\d{1,3})?)/i) ??
+    extractLabeledNumber(text, /(\d{1,3}(?:[.,]\d{1,3})?)\s*(?:l|litr(?:y)?)/i)
+  const pricePerLiter = extractLabeledNumber(
+    text,
+    /(?:cena\s*\/?\s*l|k[čc]\s*\/\s*l|jednotkov[aá]\s*cena|jc)[^0-9]{0,20}(\d{1,3}(?:[.,]\d{1,3})?)/i
+  )
+  const totalAmountCzk =
+    extractLabeledNumber(text, /(?:celkem|total|k\s*uhrad[eě]|[čc]ástka)[^0-9]{0,30}(\d{1,6}(?:[.,]\d{1,2})?)/i) ??
+    extractTotalFallback(text)
+
+  return {
+    date: dateMatch?.[1] ?? null,
+    liters,
+    pricePerLiter,
+    totalAmountCzk,
+  }
+}
+
+function computeConfidence(liters: number | null, pricePerLiter: number | null): OcrConfidence {
+  if (liters && pricePerLiter) return "high"
+  if (liters || pricePerLiter) return "medium"
+  return "low"
 }
 
 export async function POST(req: NextRequest) {
@@ -163,19 +236,7 @@ Rules:
       return NextResponse.json({ confidence: "low" })
     }
 
-    // Parse JSON from response
-    let parsed: Record<string, unknown>
-    try {
-      // Strip markdown code fences if present
-      const cleaned = data.text
-        .replace(/```json\s*/gi, "")
-        .replace(/```\s*/gi, "")
-        .trim()
-      parsed = JSON.parse(cleaned)
-    } catch {
-      console.error("Failed to parse LLM JSON response:", data.text)
-      return NextResponse.json({ confidence: "low" })
-    }
+    const parsed = tryParseJsonObject(data.text) ?? extractFromRawText(data.text)
 
     console.log("OCR parsed result:", parsed)
 
@@ -194,12 +255,17 @@ Rules:
       console.log("Calculated pricePerLiter from total/liters:", pricePerLiter)
     }
 
+    const confidence: OcrConfidence =
+      parsed.confidence === "high" || parsed.confidence === "medium" || parsed.confidence === "low"
+        ? parsed.confidence
+        : computeConfidence(liters, pricePerLiter)
+
     return NextResponse.json({
       date: normalizedDate,
       liters,
       pricePerLiter,
       totalAmountCzk,
-      confidence: parsed.confidence ?? "low",
+      confidence,
     })
   } catch (err) {
     console.error("OCR route error:", err)
