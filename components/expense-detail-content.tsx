@@ -225,9 +225,13 @@ export function ExpenseDetailContent({ vehicleId, expenseId }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-            expense.type === "fuel" ? "bg-fuel-muted" : "bg-secondary"
-          }`}>
+          <div
+            className={`w-12 h-12 flex items-center justify-center ${
+              expense.type === "fuel"
+                ? "rounded-xl bg-fuel-muted"
+                : "rounded-xl bg-secondary"
+            }`}
+          >
             <TypeIcon className={`w-6 h-6 ${typeInfo.color}`} />
           </div>
           <div>

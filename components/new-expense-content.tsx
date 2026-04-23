@@ -307,7 +307,9 @@ export function NewExpenseContent({ vehicleId }: Props) {
               }}
               className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${cardCls}`}
             >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+              <div
+                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}
+              >
                 <Icon className={`w-5 h-5 ${iconCls}`} />
               </div>
               <div>
@@ -585,8 +587,10 @@ export function NewExpenseContent({ vehicleId }: Props) {
       </button>
 
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-          <currentTypeInfo.icon className="w-5 h-5 text-muted-foreground" />
+          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+            <currentTypeInfo.icon
+              className="w-5 h-5 text-muted-foreground"
+            />
         </div>
         <h1
           className="text-2xl font-bold"

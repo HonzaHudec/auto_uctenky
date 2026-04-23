@@ -379,9 +379,9 @@ export function CostsContent({ vehicleId }: Props) {
                         className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card border border-border"
                       >
                         <div
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          className={`w-8 h-8 flex items-center justify-center shrink-0 ${
                             (TYPE_COLORS[e.type] ?? TYPE_COLORS.expense).bg
-                          }`}
+                          } rounded-lg`}
                         >
                           <Icon
                             className={`w-3.5 h-3.5 ${
