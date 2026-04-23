@@ -105,10 +105,17 @@ function extractLabeledNumber(text: string, labelPattern: RegExp): number | null
 }
 
 function extractTotalFallback(text: string): number | null {
-  const numbers = [...text.matchAll(/\b\d{1,3}(?:[ .]\d{3})*(?:[.,]\d{1,2})?\b/g)]
-    .map((m) => toNumber(m[0]))
-    .filter((n): n is number => typeof n === "number")
-    .filter((n) => n >= 50 && n <= 10000)
+  const pattern = /\b\d{1,3}(?:[ .]\d{3})*(?:[.,]\d{1,2})?\b/g
+  const numbers: number[] = []
+
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(text)) !== null) {
+    const value = toNumber(match[0])
+    if (typeof value === "number" && value >= 50 && value <= 10000) {
+      numbers.push(value)
+    }
+  }
+
   if (numbers.length === 0) return null
   return Math.max(...numbers)
 }
