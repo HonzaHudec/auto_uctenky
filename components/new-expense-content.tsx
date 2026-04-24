@@ -40,7 +40,7 @@ const expenseTypes: { value: ExpenseType; label: string; sublabel: string; icon:
   },
   {
     value: "service", label: "Servis", sublabel: "údržba, opravy, STK", icon: Wrench,
-    cardCls: "bg-warning/10 border-warning/30 hover:border-warning/60",
+    cardCls: "bg-warning/10 border-warning/40 hover:border-warning/70 hover:bg-warning/15",
     iconBg: "bg-warning/20", iconCls: "text-warning", labelCls: "text-warning",
   },
   {
@@ -308,15 +308,11 @@ export function NewExpenseContent({ vehicleId }: Props) {
               className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${cardCls}`}
             >
               <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg} ${
+                  value === "service" ? "border border-warning/40" : ""
+                }`}
               >
-                {value === "service" ? (
-                  <span className="inline-flex items-center justify-center p-0.5 rounded-[6px] border border-warning/40">
-                    <Icon className={`w-4 h-4 ${iconCls}`} />
-                  </span>
-                ) : (
-                  <Icon className={`w-5 h-5 ${iconCls}`} />
-                )}
+                <Icon className={`w-5 h-5 ${iconCls}`} />
               </div>
               <div>
                 <p className={`font-semibold text-sm ${labelCls}`}>{label}</p>
@@ -593,14 +589,16 @@ export function NewExpenseContent({ vehicleId }: Props) {
       </button>
 
       <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-            {expenseType === "service" ? (
-              <span className="inline-flex items-center justify-center p-0.5 rounded-[6px] border border-warning/40">
-                <currentTypeInfo.icon className="w-4 h-4 text-warning" />
-              </span>
-            ) : (
-              <currentTypeInfo.icon className="w-5 h-5 text-muted-foreground" />
-            )}
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              expenseType === "service"
+                ? "bg-warning/10 border border-warning/40"
+                : "bg-secondary"
+            }`}
+          >
+            <currentTypeInfo.icon
+              className={`w-5 h-5 ${expenseType === "service" ? "text-warning" : "text-muted-foreground"}`}
+            />
         </div>
         <h1
           className="text-2xl font-bold"

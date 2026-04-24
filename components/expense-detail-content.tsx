@@ -229,16 +229,12 @@ export function ExpenseDetailContent({ vehicleId, expenseId }: Props) {
             className={`w-12 h-12 flex items-center justify-center ${
               expense.type === "fuel"
                 ? "rounded-xl bg-fuel-muted"
+                : expense.type === "service"
+                ? "rounded-xl bg-warning/10 border border-warning/40"
                 : "rounded-xl bg-secondary"
             }`}
           >
-            {expense.type === "service" ? (
-              <span className="inline-flex items-center justify-center p-1 rounded-[8px] border border-warning/40">
-                <TypeIcon className="w-5 h-5 text-warning" />
-              </span>
-            ) : (
-              <TypeIcon className={`w-6 h-6 ${typeInfo.color}`} />
-            )}
+            <TypeIcon className={`w-6 h-6 ${typeInfo.color}`} />
           </div>
           <div>
             <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-exo2)" }}>
